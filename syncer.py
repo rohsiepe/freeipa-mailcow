@@ -122,13 +122,14 @@ def apply_config(config_file, config_data):
 
 def read_config():
     required_config_keys = [
-        'LDAP-MAILCOW_LDAP_URI', 
-        'LDAP-MAILCOW_LDAP_BASE_DN',
-        'LDAP-MAILCOW_LDAP_BIND_DN', 
-        'LDAP-MAILCOW_LDAP_BIND_DN_PASSWORD',
-        'LDAP-MAILCOW_API_HOST', 
-        'LDAP-MAILCOW_API_KEY', 
-        'LDAP-MAILCOW_SYNC_INTERVAL'
+        'FREEIPA-MAILCOW_LDAP_URI', 
+        'FREEIPA-MAILCOW_LDAP_BASE_DN',
+        'FREEIPA-MAILCOW_LDAP_BIND_DN', 
+        'FREEIPA-MAILCOW_LDAP_BIND_DN_PASSWORD',
+        'FREEIPA-MAILCOW_MAIL_DOMAIN',
+        'FREEIPA-MAILCOW_API_HOST', 
+        'FREEIPA-MAILCOW_API_KEY', 
+        'FREEIPA-MAILCOW_SYNC_INTERVAL'
     ]
 
     config = {}
@@ -137,16 +138,31 @@ def read_config():
         if config_key not in os.environ:
             sys.exit (f"Required environment value {config_key} is not set")
 
-        config[config_key.replace('LDAP-MAILCOW_', '')] = os.environ[config_key]
+        config[config_key.replace('FREEIPA-MAILCOW_', '')] = os.environ[config_key]
 
-    if 'LDAP-MAILCOW_LDAP_FILTER' in os.environ and 'LDAP-MAILCOW_SOGO_LDAP_FILTER' not in os.environ:
-        sys.exit('LDAP-MAILCOW_SOGO_LDAP_FILTER is required when you specify LDAP-MAILCOW_LDAP_FILTER')
-
-    if 'LDAP-MAILCOW_SOGO_LDAP_FILTER' in os.environ and 'LDAP-MAILCOW_LDAP_FILTER' not in os.environ:
-        sys.exit('LDAP-MAILCOW_LDAP_FILTER is required when you specify LDAP-MAILCOW_SOGO_LDAP_FILTER')
-
-    config['LDAP_FILTER'] = os.environ['LDAP-MAILCOW_LDAP_FILTER'] if 'LDAP-MAILCOW_LDAP_FILTER' in os.environ else '(&(objectClass=user)(objectCategory=person))'
-    config['SOGO_LDAP_FILTER'] = os.environ['LDAP-MAILCOW_SOGO_LDAP_FILTER'] if 'LDAP-MAILCOW_SOGO_LDAP_FILTER' in os.environ else "objectClass='user' AND objectCategory='person'"
+    if 'FREEIPA-MAILCOW_LDAP_FILTER_GROUP' in os.environ:
+        config['LDAP_FILTER_GROUP'] = os.environ['FREEIPA-MAILCOW_LDAP_FILTER_GROUP']
+        config['LDAP_FILTER'] = '(&(&(objectclass=inetorgperson)(memberOf=cn=' \
+            + config['LDAP_FILTER_GROUP'] \
+            + ',cn=groups,cn=accounts,' \
+            + config['LDAP_BASE_DN'] \
+            + '))(mail=*@' \
+            + config['MAIL_DOMAIN'] \
+            + '))'
+        config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson' AND memberOf='cn=" \
+            + config['LDAP_FILTER_GROUP'] \
+            + ",cn=groups,cn=accounts," \
+            + config['LDAP_BASE_DN'] \
+            + "' AND mail='*@" \
+            + config['MAIL_DOMAIN'] \
+            + "'"
+    else:
+        config['LDAP_FILTER'] = '(&(objectclass=inetorgperson)(mail=*@' \
+            + config['MAIL_DOMAIN'] \
+            + '))'
+        config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson' AND mail='*@" \
+            + config['MAIL_DOMAIN'] \
+            + "'"
 
     return config
 
