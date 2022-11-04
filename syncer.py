@@ -142,27 +142,19 @@ def read_config():
 
     if 'FREEIPA-MAILCOW_LDAP_FILTER_GROUP' in os.environ:
         config['LDAP_FILTER_GROUP'] = os.environ['FREEIPA-MAILCOW_LDAP_FILTER_GROUP']
-        config['LDAP_FILTER'] = '(&(&(objectclass=inetorgperson)(memberOf=cn=' \
+        config['LDAP_FILTER'] = '(&(objectclass=inetorgperson)(memberOf=cn=' \
             + config['LDAP_FILTER_GROUP'] \
             + ',cn=groups,cn=accounts,' \
             + config['LDAP_BASE_DN'] \
-            + '))(mail=*@' \
-            + config['MAIL_DOMAIN'] \
             + '))'
         config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson' AND memberOf='cn=" \
             + config['LDAP_FILTER_GROUP'] \
             + ",cn=groups,cn=accounts," \
             + config['LDAP_BASE_DN'] \
-            + "' AND mail='*@" \
-            + config['MAIL_DOMAIN'] \
             + "'"
     else:
-        config['LDAP_FILTER'] = '(&(objectclass=inetorgperson)(mail=*@' \
-            + config['MAIL_DOMAIN'] \
-            + '))'
-        config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson' AND mail='*@" \
-            + config['MAIL_DOMAIN'] \
-            + "'"
+        config['LDAP_FILTER'] = '(objectclass=inetorgperson)'
+        config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson'"
 
     return config
 
