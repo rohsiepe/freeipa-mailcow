@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, String, Boolean, DateTime
 from sqlalchemy.orm import sessionmaker
 
-db_file = 'db/ldap-mailcow.sqlite3'
+db_file = 'db/freeipa-mailcow.sqlite3'
 
 Base = declarative_base()
 
