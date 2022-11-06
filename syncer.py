@@ -1,5 +1,7 @@
 import sys, os, string, time, datetime
 import ldap
+import requests
+import re
 
 import filedb, api
 
@@ -8,6 +10,8 @@ from pathlib import Path
 
 import logging
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%d.%m.%y %H:%M:%S', level=logging.INFO)
+
+domainstatus = {}
 
 def main():    
     global config 
@@ -28,71 +32,131 @@ def main():
     api.api_key = config['API_KEY']
 
     while (True):
-        sync()
-        interval = int(config['SYNC_INTERVAL'])
-        logging.info(f"Sync finished, sleeping {interval} seconds before next cycle")
+        if try_sync():
+            interval = int(config['SYNC_INTERVAL'])
+            logging.info(f"Sync finished, sleeping {interval} seconds before next cycle")
+        else:
+            interval = int(config['SYNC_INTERVAL'])
+            logging.info(f"Sync failed, sleeping {interval} seconds before next cycle")
         time.sleep(interval)
 
+def try_sync():
+    try:
+        sync()
+        return True
+    except requests.exceptions.ConnectionError as e:
+        print(e)
+        return False
+    except ldap.LDAPError as e:
+        print(e)
+        return False
+    except api.MailcowApiError as e:
+        print(e)
+        return False
+    except:
+        print('An unexpected error occurred.')
+        return False
+
+def isaccountenabled(dict):
+    if 'nsaccountlock' in dict:
+        return (dict['displayName'][0].decode() != 'TRUE')
+    return True
+
+def mkfullgroup(grp):
+    return 'cn=' \
+        + grp \
+        + ',cn=groups,cn=accounts,' \
+        + config['LDAP_BASE_DN']
+
+def ismemberof(dict, grp):
+    fullgroup = mkfullgroup(grp)
+    for x in dict['memberOf']:
+        if x.decode() == fullgroup:
+            return True
+    return False
+
+def getmaildomains(dict):
+    result = []
+    for dom, grp in config['MAIL_DOMAIN'].items():
+        if grp == '' or ismemberof(dict, grp):
+            result.append(dom)
+    return result
+
+def checkmaildomain(maildomain):
+    if maildomain not in domainstatus.keys():
+        domainstatus[maildomain] = api.check_domain(maildomain)
+    return domainstatus[maildomain]
+
 def sync():
+    domainstatus.clear()
     ldap_connector = ldap.initialize(f"{config['LDAP_URI']}")
     ldap_connector.set_option(ldap.OPT_REFERRALS, 0)
     ldap_connector.simple_bind_s(config['LDAP_BIND_DN'], config['LDAP_BIND_DN_PASSWORD'])
 
     ldap_results = ldap_connector.search_s(config['LDAP_BASE_DN'], ldap.SCOPE_SUBTREE, 
                 config['LDAP_FILTER'], 
-                ['userPrincipalName', 'cn', 'userAccountControl'])
+                ['uid', 'displayName', 'nsaccountlock', 'memberOf'])
 
     ldap_results = map(lambda x: (
-        x[1]['userPrincipalName'][0].decode(),
-        x[1]['cn'][0].decode(),
-        False if int(x[1]['userAccountControl'][0].decode()) & 0b10 else True), ldap_results)
+        x[1]['uid'][0].decode(),
+        getmaildomains(x[1]),
+        x[1]['displayName'][0].decode(),
+        isaccountenabled(x[1])), ldap_results)
 
     filedb.session_time = datetime.datetime.now()
 
-    for (email, ldap_name, ldap_active) in ldap_results:
-        (db_user_exists, db_user_active) = filedb.check_user(email)
-        (api_user_exists, api_user_active, api_name) = api.check_user(email)
+    for (uid, maildomains, ldap_name, ldap_active) in ldap_results:
+        for maildomain in maildomains:
+            if checkmaildomain(maildomain):
+                (db_user_exists, db_user_active) = filedb.check_user(uid, maildomain)
+                (api_user_exists, api_user_active, api_name) = api.check_user(uid, maildomain)
 
-        unchanged = True
+                email = uid + '@' + maildomain
+                unchanged = True
 
-        if not db_user_exists:
-            filedb.add_user(email, ldap_active)
-            (db_user_exists, db_user_active) = (True, ldap_active)
-            logging.info (f"Added filedb user: {email} (Active: {ldap_active})")
-            unchanged = False
+                if not db_user_exists:
+                    filedb.add_user(uid, maildomain, ldap_active)
+                    (db_user_exists, db_user_active) = (True, ldap_active)
+                    logging.info (f"Added filedb user: {email} (Active: {ldap_active})")
+                    unchanged = False
 
-        if not api_user_exists:
-            api.add_user(email, ldap_name, ldap_active)
-            (api_user_exists, api_user_active, api_name) = (True, ldap_active, ldap_name)
-            logging.info (f"Added Mailcow user: {email} (Active: {ldap_active})")
-            unchanged = False
+                if not api_user_exists:
+                    api.add_user(uid, maildomain, ldap_name, ldap_active)
+                    (api_user_exists, api_user_active, api_name) = (True, ldap_active, ldap_name)
+                    logging.info (f"Added Mailcow user: {email} (Active: {ldap_active})")
+                    unchanged = False
 
-        if db_user_active != ldap_active:
-            filedb.user_set_active_to(email, ldap_active)
-            logging.info (f"{'Activated' if ldap_active else 'Deactived'} {email} in filedb")
-            unchanged = False
+                if db_user_active != ldap_active:
+                    filedb.user_set_active_to(uid, maildomain, ldap_active)
+                    logging.info (f"{'Activated' if ldap_active else 'Deactived'} {email} in filedb")
+                    unchanged = False
 
-        if api_user_active != ldap_active:
-            api.edit_user(email, active=ldap_active)
-            logging.info (f"{'Activated' if ldap_active else 'Deactived'} {email} in Mailcow")
-            unchanged = False
+                if api_user_active != ldap_active:
+                    api.edit_user(uid, maildomain, active=ldap_active)
+                    logging.info (f"{'Activated' if ldap_active else 'Deactived'} {email} in Mailcow")
+                    unchanged = False
 
-        if api_name != ldap_name:
-            api.edit_user(email, name=ldap_name)
-            logging.info (f"Changed name of {email} in Mailcow to {ldap_name}")
-            unchanged = False
+                if api_name != ldap_name:
+                    api.edit_user(uid, maildomain, name=ldap_name)
+                    logging.info (f"Changed name of {email} in Mailcow to {ldap_name}")
+                    unchanged = False
 
-        if unchanged:
-            logging.info (f"Checked user {email}, unchanged")
+                if unchanged:
+                    logging.info (f"Checked user {email}, unchanged")
 
-    for email in filedb.get_unchecked_active_users():
-        (api_user_exists, api_user_active, _) = api.check_user(email)
+            else:
+                logging.info (f"Mail domain {maildomain} does not exist, skipping")
 
-        if (api_user_active and api_user_active):
-            api.edit_user(email, active=False)
+    for email in filedb.get_unchecked_active_emails():
+        uid = email.split('@')[0]
+        maildomain = email.split('@')[1]       
+        (api_user_exists, api_user_active, _) = api.check_user(uid, maildomain)
+
+        if (api_user_exists and api_user_active):
+            api.edit_user(uid, maildomain, active=False)
             logging.info (f"Deactivated user {email} in Mailcow, not found in LDAP")
         
-        filedb.user_set_active_to(email, False)
+        filedb.user_set_active_to(uid, maildomain, False)
         logging.info (f"Deactivated user {email} in filedb, not found in LDAP")
 
 def apply_config(config_file, config_data):
@@ -105,9 +169,9 @@ def apply_config(config_file, config_data):
             return False
 
         backup_index = 1
-        backup_file = f"{config_file}.ldap_mailcow_bak"
+        backup_file = f"{config_file}.freeipa_mailcow_bak"
         while os.path.exists(backup_file):
-            backup_file = f"{config_file}.ldap_mailcow_bak.{backup_index}"
+            backup_file = f"{config_file}.freeipa_mailcow_bak.{backup_index}"
             backup_index += 1
 
         os.rename(config_file, backup_file)
@@ -133,6 +197,8 @@ def read_config():
     ]
 
     config = {}
+    filter_groups = []
+    domain_to_group = {}
 
     for config_key in required_config_keys:
         if config_key not in os.environ:
@@ -141,17 +207,48 @@ def read_config():
         config[config_key.replace('FREEIPA-MAILCOW_', '')] = os.environ[config_key]
 
     if 'FREEIPA-MAILCOW_LDAP_FILTER_GROUP' in os.environ:
-        config['LDAP_FILTER_GROUP'] = os.environ['FREEIPA-MAILCOW_LDAP_FILTER_GROUP']
+        grpval = os.environ['FREEIPA-MAILCOW_LDAP_FILTER_GROUP']
+        filter_groups.append(grpval)
+    else:
+        grpval = ''
+    domain_to_group[ config['MAIL_DOMAIN'] ] = grpval
+
+    mdPattern = re.compile(r'FREEIPA-MAILCOW_MAIL_DOMAIN_(\d*)')
+    for domkey, domval in os.environ.items():
+        mdMatch = mdPattern.match(domkey)
+        if mdMatch:
+            grpkey = 'FREEIPA-MAILCOW_LDAP_FILTER_GROUP_' + mdMatch.group(1)
+            if grpkey in os.environ:
+                grpval = os.environ[grpkey]
+                filter_groups.append(grpval)
+            else:
+                grpval = ''
+            domain_to_group[domval] = grpval
+
+    config['MAIL_DOMAIN'] = domain_to_group
+
+    if len(filter_groups) == 1:
         config['LDAP_FILTER'] = '(&(objectclass=inetorgperson)(memberOf=cn=' \
-            + config['LDAP_FILTER_GROUP'] \
+            + filter_groups[0] \
             + ',cn=groups,cn=accounts,' \
             + config['LDAP_BASE_DN'] \
             + '))'
         config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson' AND memberOf='cn=" \
-            + config['LDAP_FILTER_GROUP'] \
+            + filter_groups[0] \
             + ",cn=groups,cn=accounts," \
             + config['LDAP_BASE_DN'] \
             + "'"
+    elif len(filter_groups) > 1:
+        fullgrp = mkfullgroup(filter_groups[0])
+        config['LDAP_FILTER'] = '(memberOf=' + fullgrp + ')'
+        config['SOGO_LDAP_FILTER'] = "memberOf='" + fullgrp + "'"
+        filter_groups.pop(0)
+        for filter_group in filter_groups:
+            fullgrp = mkfullgroup(filter_group)
+            config['LDAP_FILTER'] = '(|' + config['LDAP_FILTER'] + '(memberOf=' + fullgrp + '))'
+            config['SOGO_LDAP_FILTER'] = config['SOGO_LDAP_FILTER'] + " OR memberOf='" + fullgrp + "'"
+        config['LDAP_FILTER'] = '(&(objectclass=inetorgperson)' + config['LDAP_FILTER'] + ')'
+        config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson' AND (" + config['SOGO_LDAP_FILTER'] + ")"
     else:
         config['LDAP_FILTER'] = '(objectclass=inetorgperson)'
         config['SOGO_LDAP_FILTER'] = "objectClass='inetorgperson'"

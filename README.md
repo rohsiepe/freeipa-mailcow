@@ -56,8 +56,9 @@ A python script periodically checks and creates new LDAP accounts and deactivate
             - FREEIPA-MAILCOW_API_HOST=https://mailcow.example.local
             - FREEIPA-MAILCOW_API_KEY=XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX
             - FREEIPA-MAILCOW_SYNC_INTERVAL=300
-            - FREEIPA-MAILCOW_LDAP_FILTER=(&(objectClass=user)(objectCategory=person)(memberOf:1.2.840.113556.1.4.1941:=CN=Group,CN=Users,DC=example DC=local))
-            - LDAP-MAILCOW_SOGO_LDAP_FILTER=objectClass='user' AND objectCategory='person' AND memberOf:1.2.840.113556.1.4.1941:='CN=Group,CN=Users,DC=example DC=local'
+            - FREEIPA-MAILCOW_MAIL_DOMAIN=example.local
+            - FREEIPA-MAILCOW_LDAP_FILTER_GROUP=mailusers
+
     ```
 
 3. Configure environmental variables:
@@ -66,11 +67,14 @@ A python script periodically checks and creates new LDAP accounts and deactivate
     * `FREEIPA-MAILCOW_LDAP_BASE_DN` - base DN where user accounts can be found
     * `FREEIPA-MAILCOW_LDAP_BIND_DN` - bind DN of a special LDAP account that will be used to browse for users, cf. step 0
     * `FREEIPA-MAILCOW_LDAP_BIND_DN_PASSWORD` - password for bind DN account
-    * `FREEIPA-MAILCOW_MAIL_DOMAIN` - users with an email address in this domain are registered with Mailcow
     * `FREEIPA-MAILCOW_API_HOST` - mailcow API url. Make sure it's enabled and accessible from within the container for both reads and writes
     * `FREEIPA-MAILCOW_API_KEY` - mailcow API key (read/write)
     * `FREEIPA-MAILCOW_SYNC_INTERVAL` - interval in seconds between LDAP synchronizations
-    * **Optional** `FREEIPA-MAILCOW_LDAP_FILTER_GROUP` - LDAP filter group
+    * `FREEIPA-MAILCOW_MAIL_DOMAIN` - users are registered with Mailcow with an email address in this domain
+    * **Optional** `FREEIPA-MAILCOW_LDAP_FILTER_GROUP` - LDAP filter group, users must be members of this group in order to be registered
+    * **Optional** `FREEIPA-MAILCOW_MAIL_DOMAIN_2` - another mail domain
+    * **Optional** `FREEIPA-MAILCOW_LDAP_FILTER_GROUP_2` - filter for above
+    You can define as many mail domains and filter groups as you like.
 
 4. Start additional container: `docker-compose up -d ldap-mailcow`
 5. Check logs `docker-compose logs ldap-mailcow`
