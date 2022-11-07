@@ -1,0 +1,15 @@
+diff -Naur orig/web/inc/functions.inc.php patched/web/inc/functions.inc.php
+--- orig/web/inc/functions.inc.php	2022-11-07 20:20:31.034187000 +0100
++++ patched/web/inc/functions.inc.php	2022-11-07 20:37:13.607988000 +0100
+@@ -981,6 +981,11 @@
+     }
+   }
+ 
++  $mbox = imap_open ("{dovecot:993/imap/ssl/novalidate-cert}INBOX", $user, $pass);
++  if ($mbox != false) {
++    imap_close($mbox);
++    return "user";
++  }
+   if (!isset($_SESSION['ldelay'])) {
+     $_SESSION['ldelay'] = "0";
+     $redis->publish("F2B_CHANNEL", "mailcow UI: Invalid password for " . $user . " by " . $_SERVER['REMOTE_ADDR']);
