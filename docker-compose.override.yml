@@ -1,0 +1,26 @@
+version: '2.1'
+services:
+
+    freeipa-mailcow:
+      image: rohsiepe/freeipa-mailcow
+      build: ../freeipa-mailcow/
+      volumes:
+        - ./data/ldap:/db:rw
+        - ./data/conf/dovecot:/conf/dovecot:rw
+        - ./data/conf/sogo:/conf/sogo:rw
+      depends_on:
+        - nginx-mailcow
+      environment:
+        - FREEIPA_MAILCOW_LDAP_URI=ldaps://ipa.example.local
+        - FREEIPA_MAILCOW_LDAP_BASE_DN=dc=example,dc=local
+        - FREEIPA_MAILCOW_LDAP_BIND_DN=uid=mailcow,cn=sysaccounts,cn=etc,dc=example,dc=local
+        - FREEIPA_MAILCOW_LDAP_BIND_DN_PASSWORD=secret123
+        - FREEIPA_MAILCOW_API_HOST=https://mailcow.example.local
+        - FREEIPA_MAILCOW_API_KEY=XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX
+        - FREEIPA_MAILCOW_SYNC_INTERVAL=300
+        - FREEIPA_MAILCOW_MAIL_DOMAIN=example.local
+        - FREEIPA_MAILCOW_LDAP_FILTER_GROUP=mailusers
+      restart: always
+      networks:
+        mailcow-network:
+
