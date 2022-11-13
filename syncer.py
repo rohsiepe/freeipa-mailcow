@@ -186,14 +186,14 @@ def apply_config(config_file, config_data):
 
 def read_config():
     required_config_keys = [
-        'FREEIPA-MAILCOW_LDAP_URI', 
-        'FREEIPA-MAILCOW_LDAP_BASE_DN',
-        'FREEIPA-MAILCOW_LDAP_BIND_DN', 
-        'FREEIPA-MAILCOW_LDAP_BIND_DN_PASSWORD',
-        'FREEIPA-MAILCOW_MAIL_DOMAIN',
-        'FREEIPA-MAILCOW_API_HOST', 
-        'FREEIPA-MAILCOW_API_KEY', 
-        'FREEIPA-MAILCOW_SYNC_INTERVAL'
+        'FREEIPA_MAILCOW_LDAP_URI', 
+        'FREEIPA_MAILCOW_LDAP_BASE_DN',
+        'FREEIPA_MAILCOW_LDAP_BIND_DN', 
+        'FREEIPA_MAILCOW_LDAP_BIND_DN_PASSWORD',
+        'FREEIPA_MAILCOW_MAIL_DOMAIN',
+        'FREEIPA_MAILCOW_API_HOST', 
+        'FREEIPA_MAILCOW_API_KEY', 
+        'FREEIPA_MAILCOW_SYNC_INTERVAL'
     ]
 
     config = {}
@@ -204,20 +204,20 @@ def read_config():
         if config_key not in os.environ:
             sys.exit (f"Required environment value {config_key} is not set")
 
-        config[config_key.replace('FREEIPA-MAILCOW_', '')] = os.environ[config_key]
+        config[config_key.replace('FREEIPA_MAILCOW_', '')] = os.environ[config_key]
 
-    if 'FREEIPA-MAILCOW_LDAP_FILTER_GROUP' in os.environ:
-        grpval = os.environ['FREEIPA-MAILCOW_LDAP_FILTER_GROUP']
+    if 'FREEIPA_MAILCOW_LDAP_FILTER_GROUP' in os.environ:
+        grpval = os.environ['FREEIPA_MAILCOW_LDAP_FILTER_GROUP']
         filter_groups.append(grpval)
     else:
         grpval = ''
     domain_to_group[ config['MAIL_DOMAIN'] ] = grpval
 
-    mdPattern = re.compile(r'FREEIPA-MAILCOW_MAIL_DOMAIN_(\d*)')
+    mdPattern = re.compile(r'FREEIPA_MAILCOW_MAIL_DOMAIN_(\d*)')
     for domkey, domval in os.environ.items():
         mdMatch = mdPattern.match(domkey)
         if mdMatch:
-            grpkey = 'FREEIPA-MAILCOW_LDAP_FILTER_GROUP_' + mdMatch.group(1)
+            grpkey = 'FREEIPA_MAILCOW_LDAP_FILTER_GROUP_' + mdMatch.group(1)
             if grpkey in os.environ:
                 grpval = os.environ[grpkey]
                 filter_groups.append(grpval)
