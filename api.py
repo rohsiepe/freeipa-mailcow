@@ -1,5 +1,6 @@
 import random, string, sys
 import requests
+import logging
 
 api_host = ''
 api_key = ''
@@ -80,6 +81,10 @@ def check_domain(maildomain):
     req = requests.get(url, headers=headers)
     rsp = req.json()
     req.close()
+
+    if req.status_code != 200:
+        logging.info (f"Mail domain {maildomain} query failed with status {req.status_code}")
+        return False
     
     if isinstance(rsp, list):
         if (not rsp or len(rsp) == 0):
