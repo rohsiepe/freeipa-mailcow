@@ -49,36 +49,37 @@ A python script periodically checks and creates new LDAP accounts and deactivate
             - ./data/conf/dovecot:/conf/dovecot:rw
             - ./data/conf/sogo:/conf/sogo:rw
         environment:
-            - FREEIPA-MAILCOW_LDAP_URI=ldap(s)://ipa.example.local
-            - FREEIPA-MAILCOW_LDAP_BASE_DN=dc=example,dc=local
-            - FREEIPA-MAILCOW_LDAP_BIND_DN=uid=mailcow,cn=sysaccounts,cn=etc,dc=example,dc=local
-            - FREEIPA-MAILCOW_LDAP_BIND_DN_PASSWORD=secret123
-            - FREEIPA-MAILCOW_API_HOST=https://mailcow.example.local
-            - FREEIPA-MAILCOW_API_KEY=XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX
-            - FREEIPA-MAILCOW_SYNC_INTERVAL=300
-            - FREEIPA-MAILCOW_MAIL_DOMAIN=example.local
-            - FREEIPA-MAILCOW_LDAP_FILTER_GROUP=mailusers
+            - FREEIPA_MAILCOW_LDAP_URI=ldap(s)://ipa.example.local
+            - FREEIPA_MAILCOW_LDAP_BASE_DN=dc=example,dc=local
+            - FREEIPA_MAILCOW_LDAP_BIND_DN=uid=mailcow,cn=sysaccounts,cn=etc,dc=example,dc=local
+            - FREEIPA_MAILCOW_LDAP_BIND_DN_PASSWORD=secret123
+            - FREEIPA_MAILCOW_API_HOST=https://mailcow.example.local
+            - FREEIPA_MAILCOW_API_KEY=XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX
+            - FREEIPA_MAILCOW_SYNC_INTERVAL=300
+            - FREEIPA_MAILCOW_MAIL_DOMAIN=example.local
+            - FREEIPA_MAILCOW_LDAP_FILTER_GROUP=mailusers
 
     ```
 
 3. Configure environmental variables:
 
-    * `FREEIPA-MAILCOW_LDAP_URI` - LDAP URI (must be reachable from within the container). The URIs are in syntax `protocol://host:port`. For example `ldap://localhost` or `ldaps://secure.domain.org`
-    * `FREEIPA-MAILCOW_LDAP_BASE_DN` - base DN where user accounts can be found
-    * `FREEIPA-MAILCOW_LDAP_BIND_DN` - bind DN of a special LDAP account that will be used to browse for users, cf. step 0
-    * `FREEIPA-MAILCOW_LDAP_BIND_DN_PASSWORD` - password for bind DN account
-    * `FREEIPA-MAILCOW_API_HOST` - mailcow API url. Make sure it's enabled and accessible from within the container for both reads and writes
-    * `FREEIPA-MAILCOW_API_KEY` - mailcow API key (read/write)
-    * `FREEIPA-MAILCOW_SYNC_INTERVAL` - interval in seconds between LDAP synchronizations
-    * `FREEIPA-MAILCOW_MAIL_DOMAIN` - users are registered with Mailcow with an email address in this domain
-    * **Optional** `FREEIPA-MAILCOW_LDAP_FILTER_GROUP` - LDAP filter group, users must be members of this group in order to be registered
-    * **Optional** `FREEIPA-MAILCOW_MAIL_DOMAIN_2` - another mail domain
-    * **Optional** `FREEIPA-MAILCOW_LDAP_FILTER_GROUP_2` - filter for above
+    * `FREEIPA_MAILCOW_LDAP_URI` - LDAP URI (must be reachable from within the container). The URIs are in syntax `protocol://host:port`. For example `ldap://localhost` or `ldaps://secure.domain.org`
+    * `FREEIPA_MAILCOW_LDAP_BASE_DN` - base DN where user accounts can be found
+    * `FREEIPA_MAILCOW_LDAP_BIND_DN` - bind DN of a special LDAP account that will be used to browse for users, cf. step 0
+    * `FREEIPA_MAILCOW_LDAP_BIND_DN_PASSWORD` - password for bind DN account
+    * `FREEIPA_MAILCOW_API_HOST` - mailcow API url. Make sure it's enabled and accessible from within the container for both reads and writes
+    * `FREEIPA_MAILCOW_API_KEY` - mailcow API key (read/write)
+    * `FREEIPA_MAILCOW_SYNC_INTERVAL` - interval in seconds between LDAP synchronizations
+    * `FREEIPA_MAILCOW_MAIL_DOMAIN` - users are registered with Mailcow with an email address in this domain
+    * **Optional** `FREEIPA_MAILCOW_LDAP_FILTER_GROUP` - LDAP filter group, users must be members of this group in order to be registered
+    * **Optional** `FREEIPA_MAILCOW_MAIL_DOMAIN_2` - another mail domain
+    * **Optional** `FREEIPA_MAILCOW_LDAP_FILTER_GROUP_2` - filter for above
+
     You can define as many mail domains and filter groups as you like.
 
-4. Start additional container: `docker-compose up -d ldap-mailcow`
-5. Check logs `docker-compose logs ldap-mailcow`
-6. Restart dovecot and SOGo if necessary `docker-compose restart sogo-mailcow dovecot-mailcow`
+4. Start additional container: `docker compose up -d ldap-mailcow`
+5. Check logs `docker compose logs ldap-mailcow`
+6. Restart dovecot and SOGo if necessary `docker compose restart sogo-mailcow dovecot-mailcow`
 
 ### LDAP Fine-tuning
 
