@@ -3,7 +3,7 @@ import ldap
 import requests
 import re
 
-import filedb, api
+import filedb, api, dockerapi
 
 from string import Template
 from pathlib import Path
@@ -85,9 +85,16 @@ def getmaildomains(dict):
 def checkmaildomain(maildomain):
     if maildomain not in domainstatus.keys():
         domainstatus[maildomain] = api.check_domain(maildomain)
+        if not domainstatus[maildomain]:
+            logging.info (f"Mail domain {maildomain} does not exist, skipping")
+    else:
+        if not domainstatus[maildomain]:
+            logging.info (f"Mail domain {maildomain} does not exist (cached), skipping")
     return domainstatus[maildomain]
 
 def sync():
+    dockerapi.test()
+
     domainstatus.clear()
     ldap_connector = ldap.initialize(f"{config['LDAP_URI']}")
     ldap_connector.set_option(ldap.OPT_REFERRALS, 0)
@@ -143,9 +150,6 @@ def sync():
 
                 if unchanged:
                     logging.info (f"Checked user {email}, unchanged")
-
-            else:
-                logging.info (f"Mail domain {maildomain} does not exist, skipping")
 
     for email in filedb.get_unchecked_active_emails():
         uid = email.split('@')[0]
