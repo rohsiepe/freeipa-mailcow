@@ -1,6 +1,9 @@
 import string, sys
 import requests
 import logging
+import json
+
+requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 class DockerApiError(Exception):
     '''The rules of the mailcow docker game were not followed'''
@@ -49,7 +52,7 @@ def test2(container):
 
 def test():
     rsp = __get_request("containers/json")
-    # logging.info (f"Containers info is {rsp}")
+    logging.info (f"Containers info:\n{json.dumps(rsp)}")
     if isinstance(rsp, list):
         for container in rsp:
             if isinstance(container, dict):
