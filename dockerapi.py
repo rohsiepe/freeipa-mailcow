@@ -43,11 +43,13 @@ def __post_request(url, json_data):
 def test2(container):
     if 'Config' in container and 'Id' in container:
         containercfg = container.get('Config')
-        if 'com.docker.compose.service' in containercfg and 'com.docker.compose.project' in containercfg:
-            containerid = container.get('Id')
-            containerservice = containercfg.get('com.docker.compose.service')
-            containerproject = containercfg.get('com.docker.compose.project')
-            logging.info(f"{containerid} => {containerproject} / {containerservice}")
+        if 'Labels' in containercfg:
+            containerlabels = containercfg.get('Labels')
+            if 'com.docker.compose.service' in containerlabels and 'com.docker.compose.project' in containerlabels:
+                containerid = container.get('Id')
+                containerservice = containerlabels.get('com.docker.compose.service')
+                containerproject = containerlabels.get('com.docker.compose.project')
+                logging.info(f"{containerid} => {containerproject} / {containerservice}")
 
 
 def test():
