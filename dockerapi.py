@@ -52,11 +52,8 @@ def test2(container):
 
 def test():
     rsp = __get_request("containers/json")
-    logging.info (f"Containers info:\n{json.dumps(rsp)}")
-    if isinstance(rsp, list):
-        for container in rsp:
-            if isinstance(container, dict):
-                test2(container)
-    elif isinstance(rsp, dict):
-        test2(rsp)
+    logging.info (f"Containers info:\n{json.dumps(rsp, indent=1)}")
+    if isinstance(rsp, dict):
+        for id, container in rsp.items():
+            test2(container)
 
