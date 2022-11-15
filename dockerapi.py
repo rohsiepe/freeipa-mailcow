@@ -35,11 +35,25 @@ def __post_request(url, json_data):
     rsp = req.json()
     req.close()
 
-    if isinstance(rsp, list):
-        rsp = rsp[0]
-
     return rsp
+
+def test2(container):
+    if 'Config' in container and 'Id' in container:
+        containercfg = container.get('Config')
+        if 'com.docker.compose.service' in containercfg and 'com.docker.compose.project' in containercfg:
+            containerid = container.get('Id')
+            containerservice = containercfg.get('com.docker.compose.service')
+            containerproject = containercfg.get('com.docker.compose.project')
+            logging.info(f"{containerid} => {containerproject} / {containerservice}")
+
 
 def test():
     rsp = __get_request("containers/json")
-    logging.info (f"Containers info is {rsp}")
+    # logging.info (f"Containers info is {rsp}")
+    if isinstance(rsp, list):
+        for container in rsp:
+            if isinstance(container, dict):
+                test2(container)
+    elif isinstance(rsp, dict):
+        test2(rsp)
+
