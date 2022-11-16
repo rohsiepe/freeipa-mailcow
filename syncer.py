@@ -17,6 +17,12 @@ def main():
     global config 
     config = read_config()
 
+    api.api_host = config['API_HOST']
+    api.api_key = config['API_KEY']
+    dockerapi.project_name = config['COMPOSE_PROJECT_NAME']
+
+    dockerapi.test()
+
     passdb_conf = read_dovecot_passdb_conf_template()
     plist_ldap = read_sogo_plist_ldap_template()
     extra_conf = read_dovecot_extra_conf()
@@ -32,11 +38,7 @@ def main():
         if plist_ldap_changed:
             dockerapi.restart_sogo()
 
-    api.api_host = config['API_HOST']
-    api.api_key = config['API_KEY']
-    dockerapi.project_name = config['COMPOSE_PROJECT_NAME']
-
-    while (True):
+     while (True):
         if try_sync():
             interval = int(config['SYNC_INTERVAL'])
             logging.info(f"Sync finished, sleeping {interval} seconds before next cycle")
@@ -98,8 +100,6 @@ def checkmaildomain(maildomain):
     return domainstatus[maildomain]
 
 def sync():
-    dockerapi.test()
-
     domainstatus.clear()
     ldap_connector = ldap.initialize(f"{config['LDAP_URI']}")
     ldap_connector.set_option(ldap.OPT_REFERRALS, 0)
