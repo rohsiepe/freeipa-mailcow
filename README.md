@@ -35,16 +35,15 @@ A python script periodically checks and creates new LDAP accounts and deactivate
 ```
 
 1. **Optional** Using the FreeIPA gui, create a group for all your mail users (e.g. mailusers)
-2. We assume, your mailcow lives in opt/mailcow-dockerized. Check out this software side by side:
+2. We assume, that your mailcow lives in `/opt/mailcow-dockerized`. Check out this software side by side:
 
 ```bash
     # cd /opt
     # git clone https://github.com/rohsiepe/freeipa-mailcow
-    ^D
 ```
 
 3. Inside the mailcow-dockerized installation folder, create a `data/ldap` directory. SQLite database for synchronization will be stored there.
-4. Extend your `docker-compose.override.yml` with an additional container:
+4. Extend your `docker-compose.override.yml` with an additional container or copy from `/opt/freeipa-mailcow/docker-compose.override.yml`:
 
     ```yaml
     freeipa-mailcow:
@@ -73,7 +72,7 @@ A python script periodically checks and creates new LDAP accounts and deactivate
 
     ```
 
-5. Configure environmental variables:
+5. Configure environmental variables to your needs:
 
     * `FREEIPA_MAILCOW_LDAP_URI` - LDAP URI (must be reachable from within the container). The URIs are in syntax `protocol://host:port`. For example `ldap://localhost` or `ldaps://secure.domain.org`
     * `FREEIPA_MAILCOW_LDAP_BASE_DN` - base DN where user accounts can be found
