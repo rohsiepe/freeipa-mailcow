@@ -2,7 +2,7 @@
 
 Adds LDAP accounts to mailcow-dockerized and enables LDAP authentication with a FreeIPA backend.
 
-## Currently, this doesn't work at all. Turn to the original, programmierus/ldap-mailcow, for something working
+## Currently, this should be feature complete, but is largely untested. Turn to the original, programmierus/ldap-mailcow, for something working
 
 * [How does it work](#how-does-it-work)
 * [Usage](#usage)
