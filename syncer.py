@@ -38,7 +38,7 @@ def main():
         if plist_ldap_changed:
             dockerapi.restart_sogo()
 
-     while (True):
+    while (True):
         if try_sync():
             interval = int(config['SYNC_INTERVAL'])
             logging.info(f"Sync finished, sleeping {interval} seconds before next cycle")
