@@ -66,7 +66,7 @@ def test2(container):
                 containerid = container.get('Id').strip()
                 containerservice = containerlabels.get('com.docker.compose.service')
                 containerproject = containerlabels.get('com.docker.compose.project').lower()
-                if containerproject == project_name.lower()
+                if containerproject == project_name.lower():
                     logging.info(f"{containerid} => {containerservice}")
 
 
