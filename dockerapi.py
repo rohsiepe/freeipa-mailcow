@@ -57,6 +57,12 @@ def get_container_id(servicename):
                             return container.get('Id').strip()
     return ''
 
+def get_sogo_id():
+    return get_container_id('sogo-mailcow')
+
+def get_dovecot_id():
+    return get_container_id('dovecot-mailcow')
+
 def test2(container):
     if 'Config' in container and 'Id' in container:
         containercfg = container.get('Config')
@@ -78,4 +84,15 @@ def test():
     if isinstance(rsp, dict):
         for id, container in rsp.items():
             test2(container)
+
+    sogoid = get_sogo_id()
+    if sogoid == '':
+        logging.info("SOGO container not found.")
+    else:
+        logging.info(f"SOGO container found with id {sogoid}")
+    dovecotid = get_dovecot_id()
+    if dovecotid == '':
+        logging.info("Dovecot container not found.")
+    else:
+        logging.info(f"Dovecot container found with id {dovecotid}")
 
