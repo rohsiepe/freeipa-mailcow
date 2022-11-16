@@ -26,10 +26,15 @@ def main():
     plist_ldap_changed = apply_config('conf/sogo/plist_ldap', config_data = plist_ldap)
 
     if passdb_conf_changed or extra_conf_changed or plist_ldap_changed:
-        logging.info ("One or more config files have been changed, please make sure to restart dovecot-mailcow and sogo-mailcow!")
+        logging.info ("One or more config files have been changed")
+        if passdb_conf_changed or extra_conf_changed:
+            dockerapi.restart_dovecot()
+        if plist_ldap_changed:
+            dockerapi.restart_sogo()
 
     api.api_host = config['API_HOST']
     api.api_key = config['API_KEY']
+    dockerapi.project_name = config['COMPOSE_PROJECT_NAME']
 
     while (True):
         if try_sync():
@@ -45,16 +50,16 @@ def try_sync():
         sync()
         return True
     except requests.exceptions.ConnectionError as e:
-        print(e)
+        logging.exception('Connection error')
         return False
     except ldap.LDAPError as e:
-        print(e)
+        logging.exception('LDAP error')
         return False
     except api.MailcowApiError as e:
-        print(e)
+        logging.exception('Mailcow API error')
         return False
     except:
-        print('An unexpected error occurred.')
+        logging.exception('An unexpected error occurred.')
         return False
 
 def isaccountenabled(dict):
@@ -203,6 +208,11 @@ def read_config():
     config = {}
     filter_groups = []
     domain_to_group = {}
+
+    if 'COMPOSE_PROJECT_NAME' in os.environ:
+        config['COMPOSE_PROJECT_NAME']=os.environ['COMPOSE_PROJECT_NAME']
+    else:
+        config['COMPOSE_PROJECT_NAME']='mailcowdockerized'
 
     for config_key in required_config_keys:
         if config_key not in os.environ:

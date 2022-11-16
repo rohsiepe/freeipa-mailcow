@@ -29,11 +29,11 @@ def __get_request(url):
     
     return rsp
 
-def __post_request(url, json_data):
-    api_url = f"https://dockerapi:443/{url}"
+def __post_request(url):
+    api_url = f"{BASE_URL}/{url}"
     headers = {'Content-type': 'application/json'}
 
-    req = requests.post(api_url, verify=False, timeout=REQUEST_TIMEOUT, headers=headers, json=json_data)
+    req = requests.post(api_url, verify=False, timeout=REQUEST_TIMEOUT, headers=headers)
     if req.status_code != 200:
         raise DockerApiError(f"DOCKER {url}: unexpected status {req.status_code}")
 
@@ -57,11 +57,33 @@ def get_container_id(servicename):
                             return container.get('Id').strip()
     return ''
 
+def restart_container(servicename):
+    try:
+        cid = get_container_id(servicename)
+        if cid == "":
+            logging.error(f"Failed to restart {servicename}, container not found.")
+        else:
+            logging.info(f"Restarting {servicename}.")
+            rsp = __post_request(f"containers/{cid}/restart")
+        return True
+    except DockerApiError as e:
+        logging.exception('Docker API error')
+        return False
+    except:
+        logging.exception('Unknown error')
+        return False
+
 def get_sogo_id():
     return get_container_id('sogo-mailcow')
 
 def get_dovecot_id():
     return get_container_id('dovecot-mailcow')
+
+def restart_sogo():
+    return restart_container('sogo-mailcow')
+
+def restart_dovecot():
+    return restart_container('dovecot-mailcow')
 
 def test2(container):
     if 'Config' in container and 'Id' in container:
@@ -77,13 +99,12 @@ def test2(container):
                 else:
                     logging.info(f"{containerid} => {containerservice}, {containerproject}!={project_name.lower()}")
 
-
 def test():
-    rsp = __get_request("containers/json")
+    #rsp = __get_request("containers/json")
     #logging.info (f"Containers info:\n{json.dumps(rsp, indent=1)}")
-    if isinstance(rsp, dict):
-        for id, container in rsp.items():
-            test2(container)
+    #if isinstance(rsp, dict):
+    #    for id, container in rsp.items():
+    #        test2(container)
 
     sogoid = get_sogo_id()
     if sogoid == '':
