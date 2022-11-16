@@ -5,7 +5,7 @@ import json
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
-project_name = 'mailcow-dockerized'
+project_name = 'mailcowdockerized'
 
 class DockerApiError(Exception):
     '''The rules of the mailcow docker game were not followed'''

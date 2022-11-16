@@ -20,7 +20,7 @@ services:
         - FREEIPA_MAILCOW_SYNC_INTERVAL=300
         - FREEIPA_MAILCOW_MAIL_DOMAIN=example.local
         - FREEIPA_MAILCOW_LDAP_FILTER_GROUP=mailusers
-        - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-mailcow-dockerized}
+        - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-mailcowdockerized}
       restart: always
       networks:
         mailcow-network:
