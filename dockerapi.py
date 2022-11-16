@@ -5,6 +5,8 @@ import json
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
+project_name = 'mailcow-dockerized'
+
 class DockerApiError(Exception):
     '''The rules of the mailcow docker game were not followed'''
 
@@ -40,21 +42,37 @@ def __post_request(url, json_data):
 
     return rsp
 
+def get_container_id(servicename):
+    rsp = __get_request("containers/json")
+    if isinstance(rsp, dict):
+        for id, container in rsp.items():
+            if 'Config' in container and 'Id' in container:
+                containercfg = container.get('Config')
+                if 'Labels' in containercfg:
+                    containerlabels = containercfg.get('Labels')
+                    if 'com.docker.compose.service' in containerlabels and 'com.docker.compose.project' in containerlabels:
+                        containerservice = containerlabels.get('com.docker.compose.service')
+                        containerproject = containerlabels.get('com.docker.compose.project').lower()
+                        if containerproject == project_name.lower() and containerservice == servicename:
+                            return container.get('Id').strip()
+    return ''
+
 def test2(container):
     if 'Config' in container and 'Id' in container:
         containercfg = container.get('Config')
         if 'Labels' in containercfg:
             containerlabels = containercfg.get('Labels')
             if 'com.docker.compose.service' in containerlabels and 'com.docker.compose.project' in containerlabels:
-                containerid = container.get('Id')
+                containerid = container.get('Id').strip()
                 containerservice = containerlabels.get('com.docker.compose.service')
-                containerproject = containerlabels.get('com.docker.compose.project')
-                logging.info(f"{containerid} => {containerproject} / {containerservice}")
+                containerproject = containerlabels.get('com.docker.compose.project').lower()
+                if containerproject == project_name.lower() and containerservice == servicename:
+                    logging.info(f"{containerid} => {containerservice}")
 
 
 def test():
     rsp = __get_request("containers/json")
-    logging.info (f"Containers info:\n{json.dumps(rsp, indent=1)}")
+    #logging.info (f"Containers info:\n{json.dumps(rsp, indent=1)}")
     if isinstance(rsp, dict):
         for id, container in rsp.items():
             test2(container)
