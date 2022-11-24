@@ -32,6 +32,8 @@
     <string>$ldap_uri</string>
     <key>port</key>
     <string>$ldap_port</string>
+    <key>encryption</key>
+    <string>$ldap_enc</string>
     <key>canAuthenticate</key>
     <string>YES</string>
 

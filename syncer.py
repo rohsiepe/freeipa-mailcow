@@ -285,6 +285,7 @@ def read_sogo_plist_ldap_template():
     return data.substitute(
         ldap_uri=config['LDAP_URI'],
         ldap_port='636',
+        ldap_enc='SSL',
         ldap_base_dn=config['LDAP_BASE_DN'],
         ldap_bind_dn=config['LDAP_BIND_DN'],
         ldap_bind_dn_password=config['LDAP_BIND_DN_PASSWORD'],
