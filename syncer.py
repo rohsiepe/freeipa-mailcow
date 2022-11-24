@@ -7,6 +7,7 @@ import filedb, api, dockerapi
 
 from string import Template
 from pathlib import Path
+from urllib.parse import urlparse
 
 import logging
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%d.%m.%y %H:%M:%S', level=logging.INFO)
@@ -193,6 +194,22 @@ def apply_config(config_file, config_data):
     logging.info(f"Saved generated config file to {config_file}")
     return True
 
+def deduce_ldap_encoding(uriparts):
+    if uriparts.scheme == 'ldaps':
+        return 'SSL'
+    else:
+        return ''
+
+def deduce_ldap_port(uriparts):
+    port = uriparts.port
+    if port:
+        return str(port)
+    elif uriparts.scheme == 'ldaps':
+        return '636'
+    else:
+        return '389'
+
+
 def read_config():
     required_config_keys = [
         'FREEIPA_MAILCOW_LDAP_URI', 
@@ -219,6 +236,13 @@ def read_config():
             sys.exit (f"Required environment value {config_key} is not set")
 
         config[config_key.replace('FREEIPA_MAILCOW_', '')] = os.environ[config_key]
+
+    ldap_uri_parts = urlparse(config['LDAP_URI'], scheme='ldap')
+    if ldap_uri_parts.netloc == '':
+        ldap_uri_parts = urlparse('//' + config['LDAP_URI'], scheme='ldap')
+    config['LDAP_ENCODING'] = deduce_ldap_encoding(ldap_uri_parts)
+    config['LDAP_PORT'] = deduce_ldap_port(ldap_uri_parts)
+    config['LDAP_HOST'] = ldap_uri_parts.hostname
 
     if 'FREEIPA_MAILCOW_LDAP_FILTER_GROUP' in os.environ:
         grpval = os.environ['FREEIPA_MAILCOW_LDAP_FILTER_GROUP']
@@ -283,9 +307,9 @@ def read_sogo_plist_ldap_template():
         data = Template(f.read())
 
     return data.substitute(
-        ldap_uri=config['LDAP_URI'],
-        ldap_port='636',
-        ldap_enc='SSL',
+        ldap_uri=config['LDAP_HOST'],   # ldap_uri=config['LDAP_URI'],
+        ldap_port=config['LDAP_PORT'],
+        ldap_enc=config['LDAP_ENCODING'],
         ldap_base_dn=config['LDAP_BASE_DN'],
         ldap_bind_dn=config['LDAP_BIND_DN'],
         ldap_bind_dn_password=config['LDAP_BIND_DN_PASSWORD'],
