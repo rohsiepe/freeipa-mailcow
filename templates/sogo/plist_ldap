@@ -30,6 +30,8 @@
 
     <key>hostname</key>
     <string>$ldap_uri</string>
+    <key>port</key>
+    <string>$ldap_port</string>
     <key>canAuthenticate</key>
     <string>YES</string>
 

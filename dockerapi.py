@@ -12,6 +12,7 @@ class DockerApiError(Exception):
 
 BASE_URL = "https://dockerapi:443"
 REQUEST_TIMEOUT = 10
+POST_TIMEOUT = 30
 
 def __get_request(url):
     api_url = f"{BASE_URL}/{url}"
@@ -32,8 +33,9 @@ def __get_request(url):
 def __post_request(url):
     api_url = f"{BASE_URL}/{url}"
     headers = {'Content-type': 'application/json'}
+    logging.info(f"Try to post to {api_url}")
 
-    req = requests.post(api_url, verify=False, timeout=REQUEST_TIMEOUT, headers=headers)
+    req = requests.post(api_url, verify=False, timeout=POST_TIMEOUT, headers=headers)
     if req.status_code != 200:
         raise DockerApiError(f"DOCKER {url}: unexpected status {req.status_code}")
 
