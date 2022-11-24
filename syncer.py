@@ -307,7 +307,7 @@ def read_sogo_plist_ldap_template():
         data = Template(f.read())
 
     return data.substitute(
-        ldap_uri=config['LDAP_HOST'],   # ldap_uri=config['LDAP_URI'],
+        ldap_uri=config['LDAP_URI'],
         ldap_port=config['LDAP_PORT'],
         ldap_enc=config['LDAP_ENCODING'],
         ldap_base_dn=config['LDAP_BASE_DN'],
